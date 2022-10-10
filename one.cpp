@@ -3,6 +3,8 @@
 #include <chrono>
 #include <vector>
 #include <string>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 
@@ -51,6 +53,8 @@ void setNumChairs(SharedMemory *sharedMemory, int numChairs) {
 }
 
 void cutHair(SharedMemory *sharedMemory) {
+    SharedMemory *memory = (struct SharedMemory*) sharedMemory;
+    cout << "Started cutting " + *(memory->customersInShop.front()) + "'s hair" << endl;
     cout << (*sharedMemory->customersInShop.back()) << endl;
 
 }
