@@ -11,23 +11,35 @@ void hold(int seconds) {
     std::this_thread::sleep_for(std::chrono::seconds(seconds));
 }
 
+
+class Customer {
+    public:
+        std::string name;
+        Customer() { // default constructor
+            name = "Unnamed";
+        }
+        Customer(std::string inputName) {
+            name = inputName;
+        }
+};
+
 class BarberShop {
     public:
         int chairs;
         int chairsTaken;
-        std::queue<Customer> *customersInShop;
+
         BarberShop() { // default constructor
             chairs = 5;
             chairsTaken = 0;
-            customersInShop = new std::queue<Customer>;
         }
         BarberShop(int numChairs) {
             chairs = numChairs;
             chairsTaken = 0;
         }
-        bool enter(Customer customer) {
+        bool enter(Customer *customer) {
             if (chairsTaken < chairs) {
-                (*customersInShop).push(customer);
+                std::cout << "Entering" << std::endl;
+                customersInShop->push(*customer);
                 chairsTaken += 1;
                 return true; // successfully took customer in
             }
@@ -69,16 +81,8 @@ class Barber {
         }
 };
 
-class Customer {
-    public:
-        std::string name;
-        Customer() { // default constructor
-            name = "Unnamed";
-        }
-        Customer(std::string inputName) {
-            name = inputName;
-        }
-};
+
+
 
 
 int main() {
@@ -91,8 +95,9 @@ int main() {
     Barber* barber = new Barber();
 
     for (int i = 0; i < sizeof(customerName)/sizeof(customerName[0]); ++i) {
-        customers[i] = new Customer(customerName[i]);
-        barberShop->enter(*customers[i]);
+        Customer *customer = new Customer(customerName[i]);
+        customers[i] = customer;
+        barberShop->enter(customer);
     }
 
 
