@@ -1,7 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
-#include <vector>
+#include <queue>
 #include <string>
 #include <thread>
 #include <chrono>
@@ -14,84 +14,87 @@ struct SharedMemory {
     int barberMutex = 0;
     int chairSemaphore = 0;
     int numOfChairs = 0;
-    vector<string *> customersInShop;
+    queue<string *> customersInShop;
 };
 
-void wait(SharedMemory *sharedMemory, Access toAccess) {
-    SharedMemory *memory = (struct SharedMemory*) sharedMemory;
+SharedMemory sharedMemory;
+
+void wait(Access toAccess) {
     switch(toAccess) {
         case chairSem:
-            if (memory->chairSemaphore < memory->numOfChairs) {
-                memory->chairSemaphore++;
+            if (sharedMemory.chairSemaphore < sharedMemory.numOfChairs) {
+                sharedMemory.chairSemaphore++;
             }
             break;
         case barberMut:
-            if (memory->barberMutex == 0) {
-                memory->barberMutex = 1;
+            if (sharedMemory.barberMutex == 0) {
+                sharedMemory.barberMutex = 1;
             }
             break;
     }
 }
 
-void signal(SharedMemory *sharedMemory, Access toAccess) {
-    SharedMemory *memory = (struct SharedMemory*) sharedMemory;
+void signal(Access toAccess) {
     switch(toAccess) {
         case chairSem:
-            if(memory->chairSemaphore > 0) {
-                memory->chairSemaphore--;
+            if(sharedMemory.chairSemaphore > 0) {
+                sharedMemory.chairSemaphore--;
             }
+            break;
         case barberMut:
-            if(memory->barberMutex == 1) {
-                memory->barberMutex = 0;
+            if(sharedMemory.barberMutex == 1) {
+                sharedMemory.barberMutex = 0;
             }
+            break;
     }
 }
 
 void setNumChairs(SharedMemory *sharedMemory, int numChairs) {
     sharedMemory->numOfChairs = numChairs;
-    sharedMemory->customersInShop = vector<string *>(sharedMemory->numOfChairs);
 }
 
 void cutHair(SharedMemory *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory*) sharedMemory;
-    cout << "Started cutting " + *(memory->customersInShop.front()) + "'s hair" << endl;
-    cout << (*sharedMemory->customersInShop.back()) << endl;
+    wait(barberMut);
+    string customer = *(memory->customersInShop.front());
+    cout << "Started cutting " + customer + "'s hair" << endl;
+    this_thread::sleep_for(chrono::seconds(2));
+    memory->customersInShop.pop();
+    cout << "Finished cutting " + customer + "'s hair" << endl;
+    signal(barberMut);
 
 }
 
 void enterBarberShop(SharedMemory *sharedMemory, string *customer) {
-    //wait(sharedMemory, chairSem);
-    //sharedMemory->customersInShop.push_back(customer);
+    SharedMemory *memory = (struct SharedMemory*) sharedMemory;
+    wait(chairSem);
 }
 
 void* barber(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory*) sharedMemory;
     while (true) {
         if (memory->chairSemaphore > 0 && memory->barberMutex == 0) {
-            wait(memory, barberMut);
-            cout << *(memory->customersInShop.back()) << endl;
-            memory->customersInShop.pop_back();
-            signal(memory, barberMut);
-            signal(memory, chairSem); // Need to implement leave shop function
+            cutHair(memory);
+            signal(chairSem); // Need to implement leave shop function
         }
     }
     //cutHair(((struct SharedMemory*)sharedMemory));
 }
 
 void* producer(void *sharedMemory) {
+    SharedMemory *memory = (struct SharedMemory*) sharedMemory;
     string first = "Andrew";
-    //enterBarberShop((struct SharedMemory*)sharedMemory, &first);
-    return NULL;
+    enterBarberShop(memory, &first);
 }
 
 int main() {
-    SharedMemory sharedMemory;
+
     setNumChairs(&sharedMemory, 3);
 
 
     string first = "Andrew";
-    sharedMemory.customersInShop.push_back(&first);
-    wait(&sharedMemory, chairSem);
+    sharedMemory.customersInShop.push(&first);
+    wait(chairSem);
     //enterBarberShop(&sharedMemory, &first);
 
     pthread_t tidBarber;
@@ -102,7 +105,7 @@ int main() {
     pthread_attr_init(&attrBarber);
     pthread_attr_init(&attrProducer);
     pthread_create(&tidBarber, &attrBarber, barber, &sharedMemory);
-    //pthread_create(&tidBarber, &attrProducer, producer, &sharedMemory);
+    pthread_create(&tidBarber, &attrProducer, producer, &sharedMemory);
 
 
     pthread_join(tidBarber, NULL);
