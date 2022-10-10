@@ -49,11 +49,11 @@ void signal(SharedMemory sharedMemory, Access toAccess) {
     }
 }
 
-void enterShop(SharedMemory *sharedMemory, string *customerNum) {
+void enterShop(SharedMemory *sharedMemory, string customerNum) {
     if ((*sharedMemory).chairSemaphore < (*sharedMemory).numOfChairs) {
         wait((*sharedMemory), chairSem);
-        (*sharedMemory).customersInShop.push_back(*customerNum);
-        cout << *customerNum + " has entered the barbershop" << endl;
+        (*sharedMemory).customersInShop.push_back(customerNum);
+        cout << customerNum + " has entered the barbershop" << endl;
     }
 }
 
@@ -83,7 +83,7 @@ void* barber(void *sharedMemory) {
 
 void* producer(void *sharedMemory) {
     string customerOne = "Robert";
-    enterShop(((struct SharedMemory*) sharedMemory), &customerOne);
+    enterShop(((struct SharedMemory*) sharedMemory), customerOne);
 }
 
 
@@ -98,7 +98,7 @@ int main() {
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_create(&pbarber, &attr, barber, sharedMemory);
-    pthread_create(&pproducer, &attr, producer, sharedMemory);
+    //pthread_create(&pproducer, &attr, producer, sharedMemory);
 
     //string customerOne = "Robert";
     //enterShop(&customerOne);
@@ -111,8 +111,14 @@ int main() {
     //enterShop(&customerEleven);
     //enterShop(&customerTwelve);
 
+
+    string customerOne = "John";
+    enterShop(sharedMemory, customerOne);
+
     pthread_join(pbarber, NULL);
-    pthread_join(pproducer, NULL);
+    //pthread_join(pproducer, NULL);
+
+
 
     cout << "Done" << endl;
 
