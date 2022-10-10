@@ -8,95 +8,111 @@ using namespace std;
 
 enum Access {chairSem, barberMut};
 
-int barberMutex = 0;
-int chairSemaphore = 0;
-int numOfChairs = 0;
-list<string> customersInShop;
 
-void setChairNum(int numChair) {
-    numOfChairs = numChair;
+struct SharedMemory {
+    int barberMutex = 0;
+    int chairSemaphore = 0;
+    int numOfChairs = 0;
+    list<string> customersInShop;
+};
+
+
+
+
+void setChairNum(SharedMemory sharedMemory, int numChair) {
+    sharedMemory.numOfChairs = numChair;
 }
 
-void wait(Access toAccess) {
+void wait(SharedMemory sharedMemory, Access toAccess) {
     switch(toAccess) {
         case chairSem:
-            if (chairSemaphore < numOfChairs) {
-                chairSemaphore++;
+            if (sharedMemory.chairSemaphore < sharedMemory.numOfChairs) {
+                sharedMemory.chairSemaphore++;
             }
         case barberMut:
-            if (barberMutex == 0) {
-                barberMutex = 1;
+            if (sharedMemory.barberMutex == 0) {
+                sharedMemory.barberMutex = 1;
             }
     }
 }
 
-void signal(Access toAccess) {
+void signal(SharedMemory sharedMemory, Access toAccess) {
     switch(toAccess) {
         case chairSem:
-            if (chairSemaphore > 0) {
-                chairSemaphore--;
+            if (sharedMemory.chairSemaphore > 0) {
+                sharedMemory.chairSemaphore--;
             }
         case barberMut:
-            if (barberMutex == 1) {
-                barberMutex = 0;
+            if (sharedMemory.barberMutex == 1) {
+                sharedMemory.barberMutex = 0;
             }
     }
 }
 
-void enterShop(string *customerNum) {
-    if (chairSemaphore < numOfChairs) {
-        wait(chairSem);
-        customersInShop.push_back(*customerNum);
+void enterShop(SharedMemory *sharedMemory, string *customerNum) {
+    if ((*sharedMemory).chairSemaphore < (*sharedMemory).numOfChairs) {
+        wait((*sharedMemory), chairSem);
+        (*sharedMemory).customersInShop.push_back(*customerNum);
         cout << *customerNum + " has entered the barbershop" << endl;
     }
 }
 
-void leaveShop(string *customerNum) {
-    customersInShop.remove(*customerNum);
-    signal(chairSem);
+void leaveShop(SharedMemory *sharedMemory, string customerNum) {
+    (*sharedMemory).customersInShop.remove(customerNum);
+    signal(*sharedMemory, chairSem);
 }
 
-void cutHair(string *customerNum) {
-    wait(chairSem);
-    cout << "Beginning to cut " + *customerNum + "'s hair" << endl;
+void cutHair(SharedMemory *sharedMemory, string customerNum) {
+    wait(*sharedMemory, chairSem);
+    cout << "Beginning to cut " + customerNum + "'s hair" << endl;
     this_thread::sleep_for(chrono::seconds(2));
-    cout << "Finished cutting " + *customerNum + "'s hair" << endl;
-    leaveShop(customerNum);
-    signal(chairSem);
+    cout << "Finished cutting " + customerNum + "'s hair" << endl;
+    leaveShop(sharedMemory, customerNum);
+    signal(*sharedMemory, chairSem);
 }
 
-void* barber(void *) {
+void* barber(void *sharedMemory) {
     while(true) {
-        if (chairSemaphore) {
-            if (barberMutex) {
-                cutHair(&customersInShop.front());
+        if (((struct SharedMemory*) sharedMemory)->chairSemaphore) {
+            if (((struct SharedMemory *) sharedMemory)->barberMutex) {
+                cutHair(((struct SharedMemory*) sharedMemory), ((struct SharedMemory*) sharedMemory)->customersInShop.front());
             }
         }
     }
 }
 
+void* producer(void *sharedMemory) {
+    string customerOne = "Robert";
+    enterShop(((struct SharedMemory*) sharedMemory), &customerOne);
+}
+
 
 int main() {
-    setChairNum(2);
+
+    SharedMemory *sharedMemory;
+    cout << (*sharedMemory).numOfChairs;
 
 
-    pthread_t pbarber;
+
+    pthread_t pbarber, pproducer;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
-    pthread_create(&pbarber, &attr, barber, NULL);
+    pthread_create(&pbarber, &attr, barber, sharedMemory);
+    pthread_create(&pproducer, &attr, producer, sharedMemory);
 
-    string customerOne = "Robert";
-    enterShop(&customerOne);
+    //string customerOne = "Robert";
+    //enterShop(&customerOne);
 
-    this_thread::sleep_for(chrono::seconds(5));
-    string customerTen = "John";
-    string customerEleven = "Sam";
-    string customerTwelve = "Tim";
-    enterShop(&customerTen);
-    enterShop(&customerEleven);
-    enterShop(&customerTwelve);
+    //this_thread::sleep_for(chrono::seconds(5));
+    //string customerTen = "John";
+    //string customerEleven = "Sam";
+    //string customerTwelve = "Tim";
+    //enterShop(&customerTen);
+    //enterShop(&customerEleven);
+    //enterShop(&customerTwelve);
 
     pthread_join(pbarber, NULL);
+    pthread_join(pproducer, NULL);
 
     cout << "Done" << endl;
 
