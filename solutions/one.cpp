@@ -6,13 +6,15 @@
 
 using namespace std;
 
-enum Access {chairSem, barberMut, barberCriticalSection};
+enum Access {chairSem,
+        barberMut,
+        criticalSection};
 
 struct SharedMemory {
     int barberMutex = 0;
     int chairSemaphore = 0;
     int numOfChairs = 0;
-    int barberCriticalSection = 0;
+    int criticalSection = 0;
     queue<string *> customersInShop;
 } sMem;
 
@@ -30,9 +32,9 @@ void wait(SharedMemory *sharedMemory, Access toAccess) {
                 sharedMemory->barberMutex = 1;
             }
             break;
-        case barberCriticalSection:
-            if (sharedMemory->barberCriticalSection == 0) {
-                sharedMemory->barberCriticalSection = 1;
+        case criticalSection:
+            if (sharedMemory->criticalSection == 0) {
+                sharedMemory->criticalSection = 1;
             }
     }
 }
@@ -49,9 +51,9 @@ void signal(SharedMemory *sharedMemory, Access toAccess) {
                 sharedMemory->barberMutex = 0;
             }
             break;
-        case barberCriticalSection:
-            if(sharedMemory->barberCriticalSection == 1) {
-                sharedMemory->barberCriticalSection = 0;
+        case criticalSection:
+            if(sharedMemory->criticalSection == 1) {
+                sharedMemory->criticalSection = 0;
             }
     }
 }
@@ -61,7 +63,7 @@ void setNumChairs(SharedMemory *sharedMemory, int numChairs) {
 }
 
 void enterBarberShop(SharedMemory *sharedMemory, string *customer) {
-    wait(sharedMemory, barberCriticalSection);
+    wait(sharedMemory, criticalSection);
     if (sharedMemory->chairSemaphore >= sharedMemory->numOfChairs) {
         cout << "Barber shop is full..." + *customer + " did not enter" << endl;
     }
@@ -70,7 +72,7 @@ void enterBarberShop(SharedMemory *sharedMemory, string *customer) {
         sharedMemory->customersInShop.push(customer);
         cout << *customer + " has entered the barber shop" << endl;
     }
-    signal(sharedMemory, barberCriticalSection);
+    signal(sharedMemory, criticalSection);
 }
 
 void leaveBarberShop(SharedMemory *sharedMemory, string *customer) {
@@ -96,7 +98,7 @@ void cutHair(SharedMemory *sharedMemory) {
 void* barber(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
     while (true) {
-        if (memory->barberCriticalSection == 0) {
+        if (memory->criticalSection == 0) {
             if (memory->chairSemaphore > 0 && memory->barberMutex == 0) {
                 cutHair(memory);
                 signal(memory, chairSem); // Need to implement leave shop function
@@ -104,6 +106,8 @@ void* barber(void *sharedMemory) {
         }
     }
     //cutHair(((struct SharedMemory*)sharedMemory));
+
+    return NULL;
 }
 
 void* producer(void *sharedMemory) {
@@ -122,7 +126,7 @@ void* producer(void *sharedMemory) {
     this_thread::sleep_for(chrono::seconds(3));
     enterBarberShop(memory, &people[5]);
 
-
+    return NULL;
 }
 
 int main() {
