@@ -6,11 +6,14 @@
 
 using namespace std;
 
-enum Access {smokerOneMutex,
-        smokerTwoMutex,
-        smokerThreeMutex,
+enum Access {
+        //smokerOneMutex,
+        //smokerTwoMutex,
+        //smokerThreeMutex,
+        smokerMutex,
         agentMutex,
-        criticalSection};
+        criticalSection
+};
 
 enum Ingredient {
     Tobacco,
@@ -25,6 +28,7 @@ struct SharedMemory {
     //int smokerOneMutex = 0;
     //int smokerTwoMutex = 0;
     //int smokerThreeMutex = 0;
+    int smokerMutex = 0;
     int agentMutex = 0;
     int criticalSection = 0;
     Ingredient smokerOne;
@@ -47,6 +51,10 @@ void wait(SharedMemory *sharedMemory, Access toAccess) {
         //    if (sharedMemory->smokerThreeMutex == 0) {
         //        sharedMemory->smokerThreeMutex = 1;
         //    }
+        case smokerMutex:
+            if (sharedMemory->smokerMutex == 0) {
+                sharedMemory->smokerMutex = 1;
+            }
         case agentMutex:
             if (sharedMemory->agentMutex == 0) {
                 sharedMemory->agentMutex = 1;
@@ -72,6 +80,10 @@ void signal(SharedMemory *sharedMemory, Access toAccess) {
         //    if (sharedMemory->smokerThreeMutex == 1) {
         //        sharedMemory->smokerThreeMutex = 0;
         //    }
+        case smokerMutex:
+            if (sharedMemory->smokerMutex == 1) {
+                sharedMemory->smokerMutex = 0;
+            }
         case agentMutex:
             if (sharedMemory->agentMutex == 1) {
                 sharedMemory->agentMutex = 0;
@@ -124,10 +136,10 @@ void setSmokerIngredients(SharedMemory *sharedMemory) {
     sharedMemory->smokerThree = ingredient[2];
 }
 
-void setTwoIngredients(Ingredient *ingredients) {
+void setTwoIngredients(SharedMemory *sharedMemory) {
     //set first ingredient
     int ingredientOneIndex = getRandomIngredientIndex(0,2);
-    ingredients[0] = ingredientMapping[ingredientOneIndex];
+    sharedMemory->agentIngredients[0] = ingredientMapping[ingredientOneIndex];
 
     //set second ingredient
     Ingredient remainingIngredients[2];
@@ -139,7 +151,7 @@ void setTwoIngredients(Ingredient *ingredients) {
         }
     }
     int ingredientTwoIndex = getRandomIngredientIndex(0,1);
-    ingredients[1] = remainingIngredients[ingredientTwoIndex];
+    sharedMemory->agentIngredients[1] = remainingIngredients[ingredientTwoIndex];
 }
 
 void* smokerOne(void *sharedMemory) {
@@ -153,12 +165,13 @@ void* smokerOne(void *sharedMemory) {
     //signal(memory, criticalSection);
 
     while (!smokerFinished) {
-        if (memory->agentMutex == 0) {
+        if (memory->smokerMutex == 0) {
             if (memory->smokerOne != memory->agentIngredients[0] and memory->smokerOne != memory->agentIngredients[1]) {
                 cout << "Smoker one started smoking" << endl;
                 this_thread::sleep_for(chrono::seconds(2));
                 cout << "Smoker one finished smoking" << endl;
                 smokerFinished = true;
+                wait(memory, smokerMutex);
                 signal(memory, agentMutex);
             }
         }
@@ -178,12 +191,13 @@ void* smokerTwo(void *sharedMemory) {
     //signal(memory, criticalSection);
 
     while (!smokerFinished) {
-        if (memory->agentMutex == 0) {
+        if (memory->smokerMutex == 0) {
             if (memory->smokerTwo != memory->agentIngredients[0] and memory->smokerTwo != memory->agentIngredients[1]) {
                 cout << "Smoker two started smoking" << endl;
                 this_thread::sleep_for(chrono::seconds(2));
                 cout << "Smoker two finished smoking" << endl;
                 smokerFinished = true;
+                wait(memory, smokerMutex);
                 signal(memory, agentMutex);
             }
         }
@@ -203,12 +217,13 @@ void* smokerThree(void *sharedMemory) {
     //signal(memory, criticalSection);
 
     while (!smokerFinished) {
-        if (memory->agentMutex == 0) {
+        if (memory->smokerMutex == 0) {
             if (memory->smokerThree != memory->agentIngredients[0] and memory->smokerThree != memory->agentIngredients[1]) {
                 cout << "Smoker three started smoking" << endl;
                 this_thread::sleep_for(chrono::seconds(2));
                 cout << "Smoker three finished smoking" << endl;
                 smokerFinished = true;
+                wait(memory, smokerMutex);
                 signal(memory, agentMutex);
             }
         }
@@ -222,16 +237,18 @@ void* agent(void *sharedMemory) {
     while (memory->criticalSection == 1) {
         ;
     }
-    wait(memory, criticalSection);
+    //wait(memory, criticalSection);
     cout << "agent started" << endl;
-    signal(memory, criticalSection);
+    //signal(memory, criticalSection);
 
     while (true) {
         if (memory->agentMutex == 0) {
+            wait(memory, agentMutex);
+            setTwoIngredients(memory);
             cout << "Agent has placed: " + ingredientOutput[memory->agentIngredients[0]]
                     + " and " + ingredientOutput[memory->agentIngredients[1]] << endl;
-            wait(memory, agentMutex);
-            setTwoIngredients(memory->agentIngredients);
+
+            signal(memory, smokerMutex);
         }
     }
 
@@ -249,6 +266,8 @@ int main() {
     cout << "Smoker one has " + ingredientOutput[sharedMemory->smokerOne] << endl;
     cout << "Smoker two has " + ingredientOutput[sharedMemory->smokerTwo] << endl;
     cout << "Smoker three has " + ingredientOutput[sharedMemory->smokerThree] << endl;
+
+    //setTwoIngredients(sharedMemory);
 
     pthread_t tidSmokerOne;
     pthread_t tidSmokerTwo;
