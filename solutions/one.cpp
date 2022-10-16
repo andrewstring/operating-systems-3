@@ -94,7 +94,7 @@ void cutHair(SharedMemory *sharedMemory) {
 
 
 void* barber(void *sharedMemory) {
-    SharedMemory *memory = (struct SharedMemory*) sharedMemory;
+    SharedMemory *memory = (struct SharedMemory *) sharedMemory;
     while (true) {
         if (memory->barberCriticalSection == 0) {
             if (memory->chairSemaphore > 0 && memory->barberMutex == 0) {
@@ -157,5 +157,7 @@ int main() {
     //sharedMemory.customersInShop.push_back(&customer);
     //string *thing = sharedMemory.customersInShop.back();
     //cout << *thing << endl;
+
+    return 0;
 
 }
