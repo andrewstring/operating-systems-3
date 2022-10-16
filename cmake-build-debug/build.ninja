@@ -49,11 +49,11 @@ cmake_ninja_workdir = /home/andrew/School/Operating-Systems/assignments/3/cmake-
 
 build cmake_object_order_depends_target_3: phony || CMakeFiles/3.dir
 
-build CMakeFiles/3.dir/one.cpp.o: CXX_COMPILER__3_Debug /home/andrew/School/Operating-Systems/assignments/3/one.cpp || cmake_object_order_depends_target_3
-  DEP_FILE = CMakeFiles/3.dir/one.cpp.o.d
+build CMakeFiles/3.dir/solutions/one.cpp.o: CXX_COMPILER__3_Debug /home/andrew/School/Operating-Systems/assignments/3/solutions/one.cpp || cmake_object_order_depends_target_3
+  DEP_FILE = CMakeFiles/3.dir/solutions/one.cpp.o.d
   FLAGS = -g -fdiagnostics-color=always -std=gnu++14
   OBJECT_DIR = CMakeFiles/3.dir
-  OBJECT_FILE_DIR = CMakeFiles/3.dir
+  OBJECT_FILE_DIR = CMakeFiles/3.dir/solutions
 
 
 # =============================================================================
@@ -63,7 +63,7 @@ build CMakeFiles/3.dir/one.cpp.o: CXX_COMPILER__3_Debug /home/andrew/School/Oper
 #############################################
 # Link the executable 3
 
-build 3: CXX_EXECUTABLE_LINKER__3_Debug CMakeFiles/3.dir/one.cpp.o
+build 3: CXX_EXECUTABLE_LINKER__3_Debug CMakeFiles/3.dir/solutions/one.cpp.o
   FLAGS = -g
   OBJECT_DIR = CMakeFiles/3.dir
   POST_BUILD = :

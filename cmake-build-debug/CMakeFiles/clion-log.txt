@@ -1,4 +1,13 @@
 /usr/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/opt/clion/bin/ninja/linux/ninja -G Ninja -S /home/andrew/School/Operating-Systems/assignments/3 -B /home/andrew/School/Operating-Systems/assignments/3/cmake-build-debug
 -- Configuring done
--- Generating done
--- Build files have been written to: /home/andrew/School/Operating-Systems/assignments/3/cmake-build-debug
+CMake Error at CMakeLists.txt:6 (add_executable):
+  Cannot find source file:
+
+    one.cpp
+
+
+CMake Error at CMakeLists.txt:6 (add_executable):
+  No SOURCES given to target: 3
+
+
+CMake Generate step failed.  Build files cannot be regenerated correctly.
