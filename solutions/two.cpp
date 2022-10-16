@@ -26,7 +26,9 @@ struct SharedMemory {
     int smokerThreeMutex = 0;
     int agentMutex = 0;
     int criticalSection = 0;
-    Ingredient ingredients[3];
+    Ingredient smokerOne;
+    Ingredient smokerTwo;
+    Ingredient smokerThree;
 } sMem;
 
 void wait(SharedMemory *sharedMemory, Access toAccess) {
@@ -81,6 +83,7 @@ void signal(SharedMemory *sharedMemory, Access toAccess) {
 
 void* smokerOne(void *sharedMemory) {
     SharedMemory *memory = (SharedMemory *) sharedMemory;
+    while (true)
     cout << "smoker one started" << endl;
 
     return NULL;
@@ -107,14 +110,17 @@ void* agent(void *sharedMemory) {
     return NULL;
 }
 
-int getRandomIngredientIndex(int max) {
+int getRandomIngredientIndex(int min, int max) {
     srand(time(NULL));
-    return rand() % max + 1;
+    return rand() % (max+1) + min;
 }
 
-void setIngredients(Ingredient *ingredient) {
+void setSmokerIngredients(SharedMemory *sharedMemory) {
+    //ingredient array
+    Ingredient ingredient[3];
+
     //set first ingredient
-    int ingredientOneIndex = getRandomIngredientIndex(3);
+    int ingredientOneIndex = getRandomIngredientIndex(0,2);
     ingredient[0] = ingredientMapping[ingredientOneIndex];
 
     //set second ingredient
@@ -126,42 +132,39 @@ void setIngredients(Ingredient *ingredient) {
             index++;
         }
     }
-    int ingredientTwoIndex = getRandomIngredientIndex(2);
+    int ingredientTwoIndex = getRandomIngredientIndex(0,1);
     ingredient[1] = remainingIngredients[ingredientTwoIndex];
 
     //set third ingredient
     Ingredient reminingIngredient;
     for(int i = 0; i < 3; ++i) {
-        if (ingredientMapping[i] != ingredient[0] || ingredientMapping[i] != ingredient[1]) {
-            ingredient[3] = ingredientMapping[i];
+        if (ingredientMapping[i] != ingredient[0] && ingredientMapping[i] != ingredient[1]) {
+            ingredient[2] = ingredientMapping[i];
         }
     }
 
-
-
-    //while(ingredient[1] == ingredient[0]) {
-    //    ingredient[1] = getRandomIngredient();
-    //}
-    //while(ingredient[2] == ingredient[0] || ingredient[2] == ingredient[1]) {
-    //    ingredient[2] = getRandomIngredient();
-    //}
-
+    //set smoker ingredients
+    sharedMemory->smokerOne = ingredient[0];
+    sharedMemory->smokerTwo = ingredient[1];
+    sharedMemory->smokerThree = ingredient[2];
 }
 
 void setTwoIngredients(Ingredient *ingredients) {
-    srand(time(NULL));
-    int ingredientIndex = rand() % 3 + 1;
-    switch(ingredientIndex) {
-        case 0:
-            ingredients[0] = Paper;
-            ingredients[1] = Matches;
-        case 1:
-            ingredients[0] = Tobacco;
-            ingredients[1] = Matches;
-        case 2:
-            ingredients[0] = Tobacco;
-            ingredients[1] = Paper;
+    //set first ingredient
+    int ingredientOneIndex = getRandomIngredientIndex(0,2);
+    ingredients[0] = ingredientMapping[ingredientOneIndex];
+
+    //set second ingredient
+    Ingredient remainingIngredients[2];
+    int index = 0;
+    for (int i = 0; i < 3; ++i) {
+        if (i != ingredientOneIndex) {
+            remainingIngredients[index] = ingredientMapping[i];
+            index++;
+        }
     }
+    int ingredientTwoIndex = getRandomIngredientIndex(0,1);
+    ingredients[1] = remainingIngredients[ingredientTwoIndex];
 }
 
 int main() {
@@ -169,13 +172,10 @@ int main() {
 
     //get random ingredient indices
     srand(time(NULL));
-    setIngredients(sharedMemory->ingredients);
+    setSmokerIngredients(sharedMemory);
 
     Ingredient twoIngredients[2];
     setTwoIngredients(twoIngredients);
-
-
-
 
     pthread_t tidSmokerOne;
     pthread_t tidSmokerTwo;
