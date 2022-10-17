@@ -73,6 +73,7 @@ void signal(SharedMemory *sharedMemory, Access toAccess) {
 }
 
 void enterHallway(SharedMemory *sharedMemory, string *student) {
+    wait(sharedMemory, criticalSection);
     if (sharedMemory->chairHallwaySemaphore >= sharedMemory->numOfChairsHallway) {
         cout << "Hallway is full..." + *student + " did not enter" << endl;
     }
@@ -81,17 +82,21 @@ void enterHallway(SharedMemory *sharedMemory, string *student) {
         sharedMemory->studentsInHallway.push(student);
         cout << *student + " has sat down in the hallway" << endl;
     }
+    signal(sharedMemory, criticalSection);
 }
 
 string* enterTaOffice(SharedMemory *sharedMemory) {
+    wait(sharedMemory, criticalSection);
     if (sharedMemory->chairTaSemaphore < sharedMemory->numOfChairsTa) {
         wait(sharedMemory, chairTaSem);
         string *studentFromHallway = sharedMemory->studentsInHallway.front();
         sharedMemory->studentsInHallway.pop();
+        signal(sharedMemory, chairHallwaySem);
         sharedMemory->studentWithTa.push(studentFromHallway);
         cout << *studentFromHallway + " has entered TA's office" << endl;
         return studentFromHallway;
     }
+    signal(sharedMemory, criticalSection);
 }
 
 void taHelpStudent(SharedMemory *sharedMemory) {
@@ -100,14 +105,17 @@ void taHelpStudent(SharedMemory *sharedMemory) {
     this_thread::sleep_for(chrono::seconds(2));
     cout << "TA finished helping " + *student << endl;
     sharedMemory->studentWithTa.pop();
+    signal(sharedMemory, taMut);
     cout << *student + " has left the TA's office" << endl;
 }
 
 void* ta(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
     while(true) {
-        if (memory->chairHallwaySemaphore > 0 && memory->chairTaSemaphore < memory->numOfChairsTa) {
-            taHelpStudent(memory);
+        if(memory->criticalSection == 0) {
+            if (memory->chairHallwaySemaphore > 0 && memory->chairTaSemaphore < memory->numOfChairsTa) {
+                taHelpStudent(memory);
+            }
         }
     }
 
