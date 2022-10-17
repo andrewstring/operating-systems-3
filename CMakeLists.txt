@@ -4,4 +4,4 @@ project(3)
 set(CMAKE_CXX_STANDARD 14)
 
 add_executable(3
-        solutions/two.cpp)
+        solutions/three.cpp)
