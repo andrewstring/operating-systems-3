@@ -109,6 +109,8 @@ void* barber(void *sharedMemory) {
 
 void* producer(void *sharedMemory) {
     SharedMemory *memory = (SharedMemory *) sharedMemory;
+
+    // SAMPLES: NEED TO FIGURE OUT TESTING FOR THIS
     string people[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
                          "Foxtrot", "Golf", "Hotel", "India", "Juliet",
                          "Kilo", "Lima", "Mike", "November", "Oscar",
