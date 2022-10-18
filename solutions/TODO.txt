@@ -1,0 +1,6 @@
+1 and 3 should be working now
+2 and 4 are started but need to be finished
+5 and 6 need to be started
+
+Need to find testing framework (probably one that can have a predicted cout
+and compare with the cout from the binaries)
