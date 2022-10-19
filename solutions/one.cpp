@@ -109,26 +109,37 @@ void* barber(void *sharedMemory) {
 
 void* producer(void *sharedMemory) {
     SharedMemory *memory = (SharedMemory *) sharedMemory;
+    bool run = true;
 
-    // SAMPLES: NEED TO FIGURE OUT TESTING FOR THIS
-    string people[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
-                         "Foxtrot", "Golf", "Hotel", "India", "Juliet",
-                         "Kilo", "Lima", "Mike", "November", "Oscar",
-                         "Papa", "Quebec", "Romeo", "Sierra", "Tango",
-                         "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
-                         "Zulu"};
-    enterBarberShop(memory, &people[0]);
-    enterBarberShop(memory, &people[1]);
-    enterBarberShop(memory, &people[2]);
-    enterBarberShop(memory, &people[3]);
-    enterBarberShop(memory, &people[4]);
-    this_thread::sleep_for(chrono::seconds(3));
-    enterBarberShop(memory, &people[5]);
-    enterBarberShop(memory, &people[6]);
-    enterBarberShop(memory, &people[7]);
-    enterBarberShop(memory, &people[8]);
-    this_thread::sleep_for(chrono::seconds(10));
-    enterBarberShop(memory, &people[9]);
+    while (true) {
+        // only run producer code once
+        if (run) {
+            // SAMPLES: NEED TO FIGURE OUT TESTING FOR THIS
+            string people[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
+                                "Foxtrot", "Golf", "Hotel", "India", "Juliet",
+                                "Kilo", "Lima", "Mike", "November", "Oscar",
+                                "Papa", "Quebec", "Romeo", "Sierra", "Tango",
+                                "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
+                                "Zulu"};
+            enterBarberShop(memory, &people[0]);
+            enterBarberShop(memory, &people[1]);
+            enterBarberShop(memory, &people[2]);
+            enterBarberShop(memory, &people[3]);
+            enterBarberShop(memory, &people[4]);
+            this_thread::sleep_for(chrono::seconds(3));
+            enterBarberShop(memory, &people[5]);
+            enterBarberShop(memory, &people[6]);
+            enterBarberShop(memory, &people[7]);
+            enterBarberShop(memory, &people[8]);
+            this_thread::sleep_for(chrono::seconds(10));
+            enterBarberShop(memory, &people[9]);
+
+            //prevent from running again
+            run = false;
+        }
+    }
+
+    
 
     return NULL;
 }

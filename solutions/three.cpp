@@ -123,27 +123,35 @@ void* ta(void *sharedMemory) {
 
 void* producer(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
+    bool run = true;
 
-    //SAMPLES: NEED TO FIGURE OUT TESTING FOR THIS
-    string students[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
-                         "Foxtrot", "Golf", "Hotel", "India", "Juliet",
-                         "Kilo", "Lima", "Mike", "November", "Oscar",
-                         "Papa", "Quebec", "Romeo", "Sierra", "Tango",
-                         "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
-                         "Zulu"};
+    while (true) {
+        if (run) {
+            //SAMPLES: NEED TO FIGURE OUT TESTING FOR THIS
+            string students[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
+                                "Foxtrot", "Golf", "Hotel", "India", "Juliet",
+                                "Kilo", "Lima", "Mike", "November", "Oscar",
+                                "Papa", "Quebec", "Romeo", "Sierra", "Tango",
+                                "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
+                                "Zulu"};
 
-    enterHallway(memory, &students[0]);
-    enterHallway(memory, &students[1]);
-    enterHallway(memory, &students[2]);
-    enterHallway(memory, &students[3]);
-    enterHallway(memory, &students[4]);
-    this_thread::sleep_for(chrono::seconds(6));
-    enterHallway(memory, &students[5]);
-    enterHallway(memory, &students[6]);
-    enterHallway(memory, &students[7]);
-    enterHallway(memory, &students[8]);
-    enterHallway(memory, &students[9]);
+            enterHallway(memory, &students[0]);
+            enterHallway(memory, &students[1]);
+            enterHallway(memory, &students[2]);
+            enterHallway(memory, &students[3]);
+            enterHallway(memory, &students[4]);
+            this_thread::sleep_for(chrono::seconds(6));
+            enterHallway(memory, &students[5]);
+            enterHallway(memory, &students[6]);
+            enterHallway(memory, &students[7]);
+            enterHallway(memory, &students[8]);
+            enterHallway(memory, &students[9]);
 
+            //prevent from running again
+            run = false;
+        }
+    }
+    
     return NULL;
 }
 
