@@ -78,16 +78,14 @@ string* enterTaOffice(SharedMemory *sharedMemory) {
     //wait(sharedMemory, criticalSection);
     if (sharedMemory->taMutex == 0) {
         string *studentFromHallway = sharedMemory->studentsInHallway.front();
-        sharedMemory->studentsInHallway.pop();
-        sharedMemory->studentWithTa.push(studentFromHallway);
         cout << *studentFromHallway + " has entered TA's office\n";
         cout.flush();
+        sharedMemory->studentsInHallway.pop();
+        sharedMemory->studentWithTa.push(studentFromHallway);
         signal(sharedMemory, chairHallwaySem);
-        //signal(sharedMemory, criticalSection);
         return studentFromHallway;
     }
     else {
-        //signal(sharedMemory, criticalSection);
         return NULL;
     }
 
@@ -100,10 +98,10 @@ void taHelpStudent(SharedMemory *sharedMemory) {
     this_thread::sleep_for(chrono::seconds(2));
     cout << "TA finished helping " + *student + "\n";
     cout.flush();
-    sharedMemory->studentWithTa.pop();
-    signal(sharedMemory, taMut);
     cout << *student + " has left the TA's office\n";
     cout.flush();
+    sharedMemory->studentWithTa.pop();
+    signal(sharedMemory, taMut);
 }
 
 void* ta(void *sharedMemory) {
