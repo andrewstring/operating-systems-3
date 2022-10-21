@@ -8,7 +8,6 @@ using namespace std;
 
 enum Access {
     chairHallwaySem,
-    chairTaSem,
     taMut,
     criticalSection
 };
@@ -63,13 +62,13 @@ void signal(SharedMemory *sharedMemory, Access toAccess) {
 void enterHallway(SharedMemory *sharedMemory, string *student) {
     wait(sharedMemory, criticalSection);
     if (sharedMemory->chairHallwaySemaphore >= sharedMemory->numOfChairsHallway) {
-        cout << "Hallway is full..." + *student + " did not enter" << endl;
+        cout << "Hallway is full..." + *student + " did not enter\n";
         cout.flush();
     }
     else {
+        cout << *student + " has sat down in the hallway\n";
         wait(sharedMemory, chairHallwaySem);
         sharedMemory->studentsInHallway.push(student);
-        cout << *student + " has sat down in the hallway" << endl;
         cout.flush();
     }
     signal(sharedMemory, criticalSection);
@@ -78,13 +77,12 @@ void enterHallway(SharedMemory *sharedMemory, string *student) {
 string* enterTaOffice(SharedMemory *sharedMemory) {
     //wait(sharedMemory, criticalSection);
     if (sharedMemory->taMutex == 0) {
-        wait(sharedMemory, chairTaSem);
         string *studentFromHallway = sharedMemory->studentsInHallway.front();
         sharedMemory->studentsInHallway.pop();
         sharedMemory->studentWithTa.push(studentFromHallway);
-        cout << *studentFromHallway + " has entered TA's office" << endl;
-        signal(sharedMemory, chairHallwaySem);
+        cout << *studentFromHallway + " has entered TA's office\n";
         cout.flush();
+        signal(sharedMemory, chairHallwaySem);
         //signal(sharedMemory, criticalSection);
         return studentFromHallway;
     }
@@ -97,14 +95,14 @@ string* enterTaOffice(SharedMemory *sharedMemory) {
 
 void taHelpStudent(SharedMemory *sharedMemory) {
     string *student = enterTaOffice(sharedMemory);
-    cout << "TA started helping " + *student << endl;
+    cout << "TA started helping " + *student + "\n";
     cout.flush();
     this_thread::sleep_for(chrono::seconds(2));
-    cout << "TA finished helping " + *student << endl;
+    cout << "TA finished helping " + *student + "\n";
     cout.flush();
     sharedMemory->studentWithTa.pop();
     signal(sharedMemory, taMut);
-    cout << *student + " has left the TA's office" << endl;
+    cout << *student + " has left the TA's office\n";
     cout.flush();
 }
 

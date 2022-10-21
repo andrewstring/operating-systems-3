@@ -65,11 +65,13 @@ void setNumChairs(SharedMemory *sharedMemory, int numChairs) {
 void enterBarberShop(SharedMemory *sharedMemory, string *customer) {
     wait(sharedMemory, criticalSection);
     if (sharedMemory->chairSemaphore >= sharedMemory->numOfChairs) {
-        cout << "Barber shop is full..." + *customer + " did not enter" << endl;
+        cout << "Barber shop is full..." + *customer + " did not enter\n";
+        cout.flush();
     }
     else {
         sharedMemory->customersInShop.push(customer);
-        cout << *customer + " has entered the barber shop" << endl;
+        cout << *customer + " has entered the barber shop\n";
+        cout.flush();
         wait(sharedMemory,chairSem);
     }
     signal(sharedMemory, criticalSection);
@@ -77,17 +79,20 @@ void enterBarberShop(SharedMemory *sharedMemory, string *customer) {
 
 void leaveBarberShop(SharedMemory *sharedMemory, string *customer) {
     signal(sharedMemory, barberMut);
-    cout << *customer + " left the barber shop" << endl;
+    cout << *customer + " left the barber shop\n";
+    cout.flush();
 }
 
 void cutHair(SharedMemory *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory*) sharedMemory;
     wait(sharedMemory, barberMut);
     string *customer = memory->customersInShop.front();
-    cout << "Started cutting " + *customer + "'s hair" << endl;
+    cout << "Started cutting " + *customer + "'s hair\n";
+    cout.flush();
     this_thread::sleep_for(chrono::seconds(2));
     memory->customersInShop.pop();
-    cout << "Finished cutting " + *customer + "'s hair" << endl;
+    cout << "Finished cutting " + *customer + "'s hair\n";
+    cout.flush();
     leaveBarberShop(memory, customer);
 }
 
