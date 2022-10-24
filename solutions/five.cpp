@@ -125,5 +125,3 @@ int main() {
     pthread_join(tidNorth, NULL);
     pthread_join(tidSouth, NULL);
 }
-
-// Not done with this

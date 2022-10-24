@@ -169,20 +169,19 @@ void* producer(void *sharedMemory) {
 
     while(true) {
         if(memory->criticalSection == 0) {
-            if(memory->writerMutex == 0 && memory->numOfReaders > 0) {
-                wait(memory, criticalSection);
-                tuple<Type, string*> readerEnteringDatabase = removeReader(memory);
-                enterDatabase(memory, readerEnteringDatabase);
-                signal(memory, criticalSection);
-            }
-            else if(memory->readerMutex == 0 && memory->writerMutex == 0 && memory->numOfWriters > 0) {
+            if(memory->readerMutex == 0 && memory->writerMutex == 0 && memory->numOfWriters > 0) {
                 wait(memory, criticalSection);
                 tuple<Type, string*> writerEnteringDatabase = removeWriter(memory);
                 enterDatabase(memory, writerEnteringDatabase);
                 signal(memory, criticalSection);
             }
+            else if(memory->writerMutex == 0 && memory->numOfReaders > 0 && memory->numOfWriters == 0) {
+                wait(memory, criticalSection);
+                tuple<Type, string*> readerEnteringDatabase = removeReader(memory);
+                enterDatabase(memory, readerEnteringDatabase);
+                signal(memory, criticalSection);
+            }
         }
-
     }
 }
 

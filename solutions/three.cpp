@@ -131,17 +131,35 @@ void* producer(void *sharedMemory) {
                                 "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
                                 "Zulu"};
 
-            enterHallway(memory, &students[0]);
-            enterHallway(memory, &students[1]);
-            enterHallway(memory, &students[2]);
-            enterHallway(memory, &students[3]);
-            enterHallway(memory, &students[4]);
+            bool run1 = true;
+            while(run1) {
+                if (memory->criticalSection == 0) {
+                    wait(memory, criticalSection);
+                    enterHallway(memory, &students[0]);
+                    enterHallway(memory, &students[1]);
+                    enterHallway(memory, &students[2]);
+                    enterHallway(memory, &students[3]);
+                    enterHallway(memory, &students[4]);
+                    signal(memory, criticalSection);
+                    run1 = false;
+                }
+            }
+
             this_thread::sleep_for(chrono::seconds(6));
-            enterHallway(memory, &students[5]);
-            enterHallway(memory, &students[6]);
-            enterHallway(memory, &students[7]);
-            enterHallway(memory, &students[8]);
-            enterHallway(memory, &students[9]);
+
+            bool run2 = true;
+            while(run2) {
+                if(memory->criticalSection == 0) {
+                    wait(memory, criticalSection);
+                    enterHallway(memory, &students[5]);
+                    enterHallway(memory, &students[6]);
+                    enterHallway(memory, &students[7]);
+                    enterHallway(memory, &students[8]);
+                    enterHallway(memory, &students[9]);
+                    signal(memory, criticalSection);
+                    run2 = false;
+                }
+            }
 
             //prevent from running again
             run = false;

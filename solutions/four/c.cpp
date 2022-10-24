@@ -24,11 +24,11 @@ struct SharedMemory {
     int readerMutex = 0;
     int writerMutex = 0;
     int criticalSection = 0;
-    queue<tuple<Type, string *>> readers;
-    queue<tuple<Type, string *>> writers;
+    queue<tuple<Type, string *>> people;
     queue<tuple<Type, string *>> peopleInDatabase;
-    int numOfReaders = 0;
-    int numOfWriters = 0;
+    //int numOfReaders = 0;
+    //int numOfWriters = 0;
+    int numOfPeople = 0;
     int numOfPeopleInDatabase = 0;
     int numOfReadersInDatabase = 0;
     int numOfWritersInDatabase = 0;
@@ -75,33 +75,43 @@ void signal(SharedMemory *sharedMemory, Access toAccess) {
 }
 void addReader(SharedMemory *sharedMemory, string *name) {
         tuple<Type, string*> newReader = make_tuple(reader, name);
-        sharedMemory->numOfReaders++;
-        sharedMemory->readers.push(newReader);
+        sharedMemory->numOfPeople++;
+        sharedMemory->people.push(newReader);
         cout << *name + " (Type: " + typeOutput[get<0>(newReader)] + ") has been added\n";
         cout.flush();
 }
 
-tuple<Type, string*> removeReader(SharedMemory *sharedMemory) {
-    tuple<Type, string*> retrievedReader = sharedMemory->readers.front();
-    sharedMemory->numOfReaders--;
-    sharedMemory->readers.pop();
-    return retrievedReader;
-}
-
 void addWriter(SharedMemory *sharedMemory, string *name) {
-        tuple<Type, string*> newWriter = make_tuple(writer, name);
-        sharedMemory->numOfWriters++;
-        sharedMemory->writers.push(newWriter);
-        cout << *name + " (Type: " + typeOutput[get<0>(newWriter)] + ") has been added\n";
-        cout.flush();
+    tuple<Type, string*> newWriter = make_tuple(writer, name);
+    sharedMemory->numOfPeople++;
+    sharedMemory->people.push(newWriter);
+    cout << *name + " (Type: " + typeOutput[get<0>(newWriter)] + ") has been added\n";
+    cout.flush();
 }
 
-tuple<Type, string*> removeWriter(SharedMemory *sharedMemory) {
-    tuple<Type, string*> retrievedWriter = sharedMemory->writers.front();
-    sharedMemory->numOfWriters--;
-    sharedMemory->writers.pop();
-    return retrievedWriter;
+Type getTypeAtFront(SharedMemory *sharedMemory) {
+    return get<0>(sharedMemory->people.front());
+}
 
+
+//tuple<Type, string*> removeReader(SharedMemory *sharedMemory) {
+//    tuple<Type, string*> retrievedReader = sharedMemory->readers.front();
+//    sharedMemory->numOfReaders--;
+//    sharedMemory->readers.pop();
+//    return retrievedReader;
+//}
+//tuple<Type, string*> removeWriter(SharedMemory *sharedMemory) {
+//    tuple<Type, string*> retrievedWriter = sharedMemory->writers.front();
+//    sharedMemory->numOfWriters--;
+//    sharedMemory->writers.pop();
+//    return retrievedWriter;
+//}
+
+tuple<Type, string*> removePerson(SharedMemory *sharedMemory) {
+    tuple<Type, string*> retrievedPerson = sharedMemory->people.front();
+    sharedMemory->numOfPeople--;
+    sharedMemory->people.pop();
+    return retrievedPerson;
 }
 
 void enterDatabase(SharedMemory *sharedMemory, tuple<Type, string*> person) {
@@ -168,51 +178,74 @@ void* producer(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
 
     while(true) {
+
         if(memory->criticalSection == 0) {
-            if(memory->writerMutex == 0 && memory->numOfReaders > 0) {
-                wait(memory, criticalSection);
-                tuple<Type, string*> readerEnteringDatabase = removeReader(memory);
-                enterDatabase(memory, readerEnteringDatabase);
-                signal(memory, criticalSection);
-            }
-            else if(memory->readerMutex == 0 && memory->writerMutex == 0 && memory->numOfWriters > 0) {
-                wait(memory, criticalSection);
-                tuple<Type, string*> writerEnteringDatabase = removeWriter(memory);
-                enterDatabase(memory, writerEnteringDatabase);
-                signal(memory, criticalSection);
+            if(memory->numOfPeople > 0) {
+                Type nextUpType = getTypeAtFront(memory);
+                if(nextUpType == reader) {
+                    if(memory->writerMutex == 0) {
+                        wait(memory, criticalSection);
+                        tuple<Type, string*> readerEnteringDatabase = removePerson(memory);
+                        enterDatabase(memory, readerEnteringDatabase);
+                        signal(memory, criticalSection);
+                    }
+                }
+                else if(nextUpType == writer) {
+                    if(memory->readerMutex == 0 && memory->writerMutex == 0) {
+                        wait(memory, criticalSection);
+                        tuple<Type, string*> writerEnteringDatabase = removePerson(memory);
+                        enterDatabase(memory, writerEnteringDatabase);
+                        signal(memory, criticalSection);
+                    }
+                }
             }
         }
 
+//        if(memory->criticalSection == 0) {
+//            if(memory->writerMutex == 0 && memory->numOfReaders > 0) {
+//                wait(memory, criticalSection);
+//                tuple<Type, string*> readerEnteringDatabase = removeReader(memory);
+//                enterDatabase(memory, readerEnteringDatabase);
+//                signal(memory, criticalSection);
+//            }
+//            else if(memory->readerMutex == 0 && memory->writerMutex == 0 && memory->numOfWriters > 0) {
+//                wait(memory, criticalSection);
+//                tuple<Type, string*> writerEnteringDatabase = removeWriter(memory);
+//                enterDatabase(memory, writerEnteringDatabase);
+//                signal(memory, criticalSection);
+//            }
+//        }
+
     }
 }
 
 
-void* readerProducer(void *sharedMemory) {
-    SharedMemory *memory = (struct SharedMemory *) sharedMemory;
-
-    while(true) {
-            if (memory->writerMutex == 0 && memory->numOfReaders > 0) {
-                tuple<Type, string*> readerEnteringDatabase = removeReader(memory);
-                enterDatabase(memory, readerEnteringDatabase);
-            }
-    }
-
-    return NULL;
-}
-
-void* writerProducer(void *sharedMemory) {
-    SharedMemory *memory = (struct SharedMemory *) sharedMemory;
-
-    while(true) {
-            if(memory->readerMutex == 0 && memory->writerMutex == 0 && memory->numOfWriters > 0) {
-                tuple<Type, string*> writerEnteringDatabase = removeWriter(memory);
-                enterDatabase(memory, writerEnteringDatabase);
-
-            }
-    }
-
-    return NULL;
-}
+//void* readerProducer(void *sharedMemory) {
+//    SharedMemory *memory = (struct SharedMemory *) sharedMemory;
+//
+//    while(true) {
+//            if (memory->writerMutex == 0 && memory->numOfReaders > 0) {
+//                tuple<Type, string*> readerEnteringDatabase = removeReader(memory);
+//                enterDatabase(memory, readerEnteringDatabase);
+//            }
+//    }
+//
+//    return NULL;
+//}
+//
+//void* writerProducer(void *sharedMemory) {
+//    SharedMemory *memory = (struct SharedMemory *) sharedMemory;
+//
+//    while(true) {
+//            if(memory->readerMutex == 0 && memory->writerMutex == 0 && memory->numOfWriters > 0) {
+//                tuple<Type, string*> writerEnteringDatabase = removeWriter(memory);
+//                enterDatabase(memory, writerEnteringDatabase);
+//
+//            }
+//    }
+//
+//    return NULL;
+//}
 
 void addPeople(SharedMemory* sharedMemory, string *students) {
     bool run1 = true;
