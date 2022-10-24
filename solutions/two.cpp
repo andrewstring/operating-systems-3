@@ -266,10 +266,11 @@ void* agent(void *sharedMemory) {
         if (memory->criticalSection == 0) {
             wait(memory, criticalSection);
             if (memory->agentMutex == 0) {
+                setTwoIngredients(memory);
                 cout << "Agent has placed: " + ingredientOutput[memory->agentIngredients[0]]
                         + " and " + ingredientOutput[memory->agentIngredients[1]] + "\n";
                 wait(memory, agentMutex);
-                setTwoIngredients(memory);
+
                 this_thread::sleep_for(chrono::seconds(2));
                 signal(memory, smokerMutex);
             }
