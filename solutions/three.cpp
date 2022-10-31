@@ -6,61 +6,81 @@
 
 using namespace std;
 
-enum Access {
+// access points for wait and signal
+enum Semaphore {
     chairHallwaySem,
+};
+
+enum Mutex {
     taMut,
     criticalSection
 };
 
 struct SharedMemory {
-    int taMutex = 0;
+    int taMutex = 1;
+    int criticalSection = 1;
     int chairHallwaySemaphore = 0;
     int numOfChairsHallway = 3;
-    int criticalSection = 0;
+    // we will use a queue for students in hallway so that first student will be served first
     queue<string *> studentsInHallway;
+    // TA queue will only ever be max length 1, but this makes it easy to push student into the
+    // TAs office and pop them out once they are done
     queue<string *> studentWithTa;
 } sMem;
 
-void wait(SharedMemory *sharedMemory, Access toAccess) {
+void wait(SharedMemory *sharedMemory, Semaphore toAccess) {
     switch (toAccess) {
         case chairHallwaySem:
             if (sharedMemory->chairHallwaySemaphore < sharedMemory->numOfChairsHallway) {
                 sharedMemory->chairHallwaySemaphore++;
             }
             break;
-        case taMut:
-            if (sharedMemory->taMutex == 0) {
-                sharedMemory->taMutex = 1;
-            }
-            break;
-        case criticalSection:
-            if (sharedMemory->criticalSection == 0) {
-                sharedMemory->criticalSection = 1;
-            }
     }
 }
 
-void signal(SharedMemory *sharedMemory, Access toAccess) {
+void acquire(SharedMemory *sharedMemory, Mutex toAccess) {
+    switch(toAccess) {
+        case taMut:
+            if(sharedMemory->taMutex == 1) {
+                sharedMemory->taMutex = 0;
+            }
+            break;
+        case criticalSection:
+            if(sharedMemory->criticalSection == 1) {
+                sharedMemory->criticalSection = 0;
+            }
+            break;
+    }
+}
+
+void signal(SharedMemory *sharedMemory, Semaphore toAccess) {
     switch(toAccess) {
         case chairHallwaySem:
             if (sharedMemory->chairHallwaySemaphore > 0) {
                 sharedMemory->chairHallwaySemaphore--;
             }
             break;
+    }
+}
+
+void release(SharedMemory *sharedMemory, Mutex toAccess) {
+    switch(toAccess) {
         case taMut:
-            if (sharedMemory->taMutex == 1) {
-                sharedMemory->taMutex = 0;
+            if(sharedMemory->taMutex == 0) {
+                sharedMemory->taMutex = 1;
             }
             break;
         case criticalSection:
-            if (sharedMemory->criticalSection == 1) {
-                sharedMemory->criticalSection = 0;
+            if(sharedMemory->criticalSection == 0) {
+                sharedMemory->criticalSection = 1;
             }
+            break;
     }
 }
 
 void enterHallway(SharedMemory *sharedMemory, string *student) {
-    wait(sharedMemory, criticalSection);
+    acquire(sharedMemory, criticalSection);
+    // only allow students to enter hallway if it is not full
     if (sharedMemory->chairHallwaySemaphore >= sharedMemory->numOfChairsHallway) {
         cout << "Hallway is full..." + *student + " did not enter\n";
         cout.flush();
@@ -71,18 +91,20 @@ void enterHallway(SharedMemory *sharedMemory, string *student) {
         sharedMemory->studentsInHallway.push(student);
         cout.flush();
     }
-    signal(sharedMemory, criticalSection);
+
+    release(sharedMemory, criticalSection);
 }
 
 string* enterTaOffice(SharedMemory *sharedMemory) {
-    //wait(sharedMemory, criticalSection);
-    if (sharedMemory->taMutex == 0) {
+    // only enter TA office if the TA is not busy
+    if (sharedMemory->taMutex == 1) {
         string *studentFromHallway = sharedMemory->studentsInHallway.front();
         cout << *studentFromHallway + " has entered TA's office\n";
         cout.flush();
         sharedMemory->studentsInHallway.pop();
         sharedMemory->studentWithTa.push(studentFromHallway);
         signal(sharedMemory, chairHallwaySem);
+
         return studentFromHallway;
     }
     else {
@@ -95,20 +117,24 @@ void taHelpStudent(SharedMemory *sharedMemory) {
     string *student = enterTaOffice(sharedMemory);
     cout << "TA started helping " + *student + "\n";
     cout.flush();
+
+    // this sleep will be the amount of time that the TA is spending with student
     this_thread::sleep_for(chrono::seconds(2));
     cout << "TA finished helping " + *student + "\n";
     cout.flush();
     cout << *student + " has left the TA's office\n";
     cout.flush();
     sharedMemory->studentWithTa.pop();
-    signal(sharedMemory, taMut);
+    release(sharedMemory, taMut);
 }
 
 void* ta(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
     while(true) {
-        if(memory->criticalSection == 0) {
-            if (memory->chairHallwaySemaphore > 0 && memory->taMutex == 0) {
+        if(memory->criticalSection == 1) {
+            // only help student when the hallway is not empty and TA is not already
+            // busy with a student
+            if (memory->chairHallwaySemaphore > 0 && memory->taMutex == 1) {
                 taHelpStudent(memory);
             }
         }
@@ -122,8 +148,9 @@ void* producer(void *sharedMemory) {
     bool run = true;
 
     while (true) {
+        // only run when we have not finished (mac will give an error if this thread stops)
         if (run) {
-            //SAMPLES: NEED TO FIGURE OUT TESTING FOR THIS
+            // array of student names
             string students[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
                                 "Foxtrot", "Golf", "Hotel", "India", "Juliet",
                                 "Kilo", "Lima", "Mike", "November", "Oscar",
@@ -131,32 +158,35 @@ void* producer(void *sharedMemory) {
                                 "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
                                 "Zulu"};
 
+            // keep waiting to add students until critical section is free
             bool run1 = true;
             while(run1) {
-                if (memory->criticalSection == 0) {
-                    wait(memory, criticalSection);
+                if (memory->criticalSection == 1) {
+                    acquire(memory, criticalSection);
                     enterHallway(memory, &students[0]);
                     enterHallway(memory, &students[1]);
                     enterHallway(memory, &students[2]);
                     enterHallway(memory, &students[3]);
                     enterHallway(memory, &students[4]);
-                    signal(memory, criticalSection);
+                    release(memory, criticalSection);
                     run1 = false;
                 }
             }
 
+            // wait some time until adding more students
             this_thread::sleep_for(chrono::seconds(6));
 
+            // keep waiting to add students until critical section is free
             bool run2 = true;
             while(run2) {
-                if(memory->criticalSection == 0) {
-                    wait(memory, criticalSection);
+                if(memory->criticalSection == 1) {
+                    acquire(memory, criticalSection);
                     enterHallway(memory, &students[5]);
                     enterHallway(memory, &students[6]);
                     enterHallway(memory, &students[7]);
                     enterHallway(memory, &students[8]);
                     enterHallway(memory, &students[9]);
-                    signal(memory, criticalSection);
+                    release(memory, criticalSection);
                     run2 = false;
                 }
             }
@@ -173,6 +203,7 @@ int main() {
 
     SharedMemory *sharedMemory = &sMem;
 
+    // we will have two threads - producer=students entering hallway, consumer=TA
     pthread_t tidTa;
     pthread_t tidProducer;
     pthread_attr_t attrTa;
@@ -185,7 +216,6 @@ int main() {
 
     pthread_join(tidTa, NULL);
     pthread_join(tidProducer, NULL);
-
 
     return 0;
 }
