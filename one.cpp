@@ -11,6 +11,7 @@ enum Semaphore {
     chairSem,
 };
 
+// access points for acquire and release
 enum Mutex {
     barberMut,
     criticalSection
@@ -117,6 +118,7 @@ void cutHair(SharedMemory *sharedMemory) {
     cout << "Started cutting " + *customer + "'s hair\n";
     cout.flush();
 
+    // take 2 seconds to cut hair
     this_thread::sleep_for(chrono::seconds(2));
 
     memory->customersInShop.pop();
@@ -159,6 +161,7 @@ void* producer(void *sharedMemory) {
                                 "Papa", "Quebec", "Romeo", "Sierra", "Tango",
                                 "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
                                 "Zulu"};
+
             enterBarberShop(memory, &people[0]);
             enterBarberShop(memory, &people[1]);
             enterBarberShop(memory, &people[2]);

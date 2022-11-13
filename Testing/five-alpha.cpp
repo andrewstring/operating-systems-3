@@ -5,10 +5,10 @@
 #include <string>
 #include <tuple>
 #include <map>
+#include "testing.h"
 
 using namespace std;
 
-// access points for acquire and release
 enum Mutex {
     northMut,
     southMut,
@@ -19,7 +19,6 @@ enum Direction {
     north,
     south
 };
-
 string directionOutput[2] = {"North Bound", "South Bound"};
 
 struct Traveler {
@@ -37,8 +36,6 @@ struct SharedMemory {
     int numOfNorthTravelers = 0;
     int numOfSouthTravelers = 0;
     int numOfTravelersOnBridge = 0;
-
-    // keep traveler names in shared memory for easy access between threads
     string traveler[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
                            "Foxtrot", "Golf", "Hotel", "India", "Juliet",
                            "Kilo", "Lima", "Mike", "November", "Oscar",
@@ -90,69 +87,91 @@ void release(SharedMemory *sharedMemory, Mutex toAccess) {
 void addNorthTraveler(SharedMemory *sharedMemory, string *name) {
     tuple<Direction, string*> newNorthTraveler = make_tuple(north, name);
     sharedMemory->numOfNorthTravelers++;
-
-    // add north traveler to north traveler queue
     sharedMemory->northTravelers.push(newNorthTraveler);
-    cout << *name + " (Direction: " + directionOutput[get<0>(newNorthTraveler)] + ") has been added\n";
-    cout.flush();
+    assertInt(
+        sharedMemory->numOfNorthTravelers,
+        sharedMemory->northTravelers.size(),
+        "Number of north travelers and size of north travelers are equal when north traveler is added",
+        "Number of north travelers and size of north travelers are not equal when north traveler is added"
+    );
+    //cout << *name + " (Direction: " + directionOutput[get<0>(newNorthTraveler)] + ") has been added\n";
+    //cout.flush();
 }
 
 tuple<Direction, string*> *removeNorthTraveler(SharedMemory *sharedMemory) {
     tuple<Direction, string*> *retrievedNorthTraveler = &(sharedMemory->northTravelers.front());
     sharedMemory->numOfNorthTravelers--;
-
-    // remove north traveler from north traveler queue
     sharedMemory->northTravelers.pop();
+    assertInt(
+        sharedMemory->numOfNorthTravelers,
+        sharedMemory->northTravelers.size(),
+        "Number of north travelers and size of north travelers are equal when north traveler is removed",
+        "Number of north travelers and size of north travelers are not equal when north traveler is removed"
+    );
     return retrievedNorthTraveler;
 }
 
 void addSouthTraveler(SharedMemory *sharedMemory, string *name) {
     tuple<Direction, string*> newSouthTraveler = make_tuple(south, name);
     sharedMemory->numOfSouthTravelers++;
-
-    // add south traveler to south traveler queue
     sharedMemory->southTravelers.push(newSouthTraveler);
-    cout << *name + " (Direction: " + directionOutput[get<0>(newSouthTraveler)] + ") has been added\n";
-    cout.flush();
+    assertInt(
+        sharedMemory->numOfSouthTravelers,
+        sharedMemory->southTravelers.size(),
+        "Number of south travelers and size of south travelers are equal when south traveler is added",
+        "Number of south travelers and size of south travelers are not equal when south traveler is added"
+    );
+    //cout << *name + " (Direction: " + directionOutput[get<0>(newSouthTraveler)] + ") has been added\n";
+    //cout.flush();
 }
 
 tuple<Direction, string*> *removeSouthTraveler(SharedMemory *sharedMemory) {
     tuple<Direction, string*> *retrievedSouthTraveler = &(sharedMemory->southTravelers.front());
     sharedMemory->numOfSouthTravelers--;
-
-    // remove south traveler from south traveler queue
     sharedMemory->southTravelers.pop();
+    assertInt(
+        sharedMemory->numOfSouthTravelers,
+        sharedMemory->southTravelers.size(),
+        "Number of south travelers and size of south travelers are equal when south traveler is removed",
+        "Number of south travelers and size of south travelers are not equal when south traveler is removed"
+    );
     return retrievedSouthTraveler;
 }
 
 void* crossBridge(void *traveler) {
     tuple<Direction, string*> *bridgeTraveler = (tuple<Direction, string*> *) traveler;
-
-    // it will take 2 seconds to cross the bridge
     this_thread::sleep_for(chrono::seconds(2));
-    cout << *(get<1>(*bridgeTraveler)) + " (Direction: " + directionOutput[get<0>(*bridgeTraveler)] + ") has crossed the bridge\n";
-    cout.flush();
+    //cout << *(get<1>(*bridgeTraveler)) + " (Direction: " + directionOutput[get<0>(*bridgeTraveler)] + ") has crossed the bridge\n";
+    //cout.flush();
 
     return NULL;
 }
 
 pthread_t enterBridge(SharedMemory *sharedMemory, tuple<Direction, string*> *traveler) {
-
-    // create thread for traveller
     pthread_t tidTraveler;
     pthread_attr_t attrTraveler;
 
     pthread_attr_init(&attrTraveler);
 
-    cout << *get<1>(*traveler) + " (Direction: " + directionOutput[get<0>(*traveler)] + ") has started crossing bridge\n";
-    cout.flush();
+    //cout << *get<1>(*traveler) + " (Direction: " + directionOutput[get<0>(*traveler)] + ") has started crossing bridge\n";
+    //cout.flush();
 
     if(get<0>(*traveler) == north) {
-        // acquire north mutex if the traveller is northern
         acquire(sharedMemory, northMut);
+        assertInt(
+            sharedMemory->northMutex,
+            0,
+            "North mutex was successfully acquired",
+            "North mutex was not successfully acquired"
+        );
     } else if(get<0>(*traveler) == south) {
-        // acquire south mutex if the traveller is southern
         acquire(sharedMemory, southMut);
+        assertInt(
+            sharedMemory->southMutex,
+            0,
+            "South mutex was successfully acquired",
+            "South mutex was not successfully acquired"
+        );
     }
     sharedMemory->numOfTravelersOnBridge++;
 
@@ -164,12 +183,18 @@ pthread_t enterBridge(SharedMemory *sharedMemory, tuple<Direction, string*> *tra
 }
 
 void setRRQuantum(SharedMemory *sharedMemory, int quantum) {
-    // program will set the value used for the round robin quantum
     sharedMemory->rrQuantum = quantum;
 }
 
 void* northProducer(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
+
+//    string traveler[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
+//                           "Foxtrot", "Golf", "Hotel", "India", "Juliet",
+//                           "Kilo", "Lima", "Mike", "November", "Oscar",
+//                           "Papa", "Quebec", "Romeo", "Sierra", "Tango",
+//                           "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
+//                           "Zulu"};
 
     bool run1 = true;
     while(run1) {
@@ -208,6 +233,13 @@ void* northProducer(void *sharedMemory) {
 void* southProducer(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
 
+//    string traveler[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",
+//                           "Foxtrot", "Golf", "Hotel", "India", "Juliet",
+//                           "Kilo", "Lima", "Mike", "November", "Oscar",
+//                           "Papa", "Quebec", "Romeo", "Sierra", "Tango",
+//                           "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
+//                           "Zulu"};
+
     bool run1 = true;
     while(run1) {
         if(memory->criticalSection == 1) {
@@ -223,7 +255,6 @@ void* southProducer(void *sharedMemory) {
     }
     release(memory, criticalSection);
 
-    // will wait some time before producing more traveler
     this_thread::sleep_for(chrono::seconds(4));
 
     bool run2 = true;
@@ -246,17 +277,13 @@ void* southProducer(void *sharedMemory) {
 void* travelerConsumer(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
 
-    // start with the north travellers
     Direction rrCurrentSide = north;
 
     while(true) {
-        // run this block only if the round robin is on the north
         if (memory->criticalSection == 1 && rrCurrentSide == north) {
             if (memory->numOfNorthTravelers > 0 && memory->southMutex == 1) {
                 acquire(memory, criticalSection);
                 int counter = 0;
-
-                // create array of thread IDs for north traveller threads
                 pthread_t tidTravelers[memory->rrQuantum];
                 while (counter < memory->rrQuantum) {
                     if (memory->numOfNorthTravelers == 0) {
@@ -266,8 +293,6 @@ void* travelerConsumer(void *sharedMemory) {
                         counter++;
                     }
                 }
-
-                // join north traveller threads
                 for (int i = 0; i < counter; ++i) {
                     pthread_join(tidTravelers[i], NULL);
                     memory->numOfTravelersOnBridge--;
@@ -276,18 +301,12 @@ void* travelerConsumer(void *sharedMemory) {
                     release(memory, northMut);
                 }
             }
-
-            // after the north round robin round, change to a south round
             rrCurrentSide = south;
             release(memory, criticalSection);
-        
-        // run this block only if the round robin is on the south
         } else if (memory->criticalSection == 1 && rrCurrentSide == south) {
             if (memory->numOfSouthTravelers > 0 && memory->northMutex == 1) {
                 acquire(memory, criticalSection);
                 int counter = 0;
-
-                // create array of thread IDs for south traveller threads
                 pthread_t tidTravelers[memory->rrQuantum];
                 while (counter < memory->rrQuantum) {
                     if (memory->numOfSouthTravelers == 0) {
@@ -297,8 +316,6 @@ void* travelerConsumer(void *sharedMemory) {
                         counter++;
                     }
                 }
-
-                // join south traveller threads
                 for (int i = 0; i < counter; ++i) {
                     pthread_join(tidTravelers[i], NULL);
                     memory->numOfTravelersOnBridge--;
@@ -307,8 +324,6 @@ void* travelerConsumer(void *sharedMemory) {
                     release(memory, southMut);
                 }
             }
-
-            // after the south round robin round, change to a north round
             rrCurrentSide = north;
             release(memory, criticalSection);
         }
@@ -329,6 +344,8 @@ int main() {
     pthread_attr_t attrTravelerConsumer;
     pthread_attr_t attrNorthProducer;
     pthread_attr_t attrSouthProducer;
+
+
 
     pthread_attr_init(&attrNorthProducer);
     pthread_attr_init(&attrSouthProducer);

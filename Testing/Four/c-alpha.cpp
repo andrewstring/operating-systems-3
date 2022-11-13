@@ -4,10 +4,10 @@
 #include <queue>
 #include <string>
 #include <tuple>
+#include "../testing.h"
 
 using namespace std;
 
-// access points for acquire and release
 enum Mutex {
     readerMut,
     writerMut,
@@ -25,11 +25,10 @@ struct SharedMemory {
     int readerMutex = 1;
     int writerMutex = 1;
     int criticalSection = 1;
-    queue<tuple<Type, string *>> readers;
-    queue<tuple<Type, string *>> writers;
+    int testCounter = 0;
+    queue<tuple<Type, string *>> people;
     queue<tuple<Type, string *>> peopleInDatabase;
-    int numOfReaders = 0;
-    int numOfWriters = 0;
+    int numOfPeople = 0;
     int numOfPeopleInDatabase = 0;
     int numOfReadersInDatabase = 0;
     int numOfWritersInDatabase = 0;
@@ -76,67 +75,86 @@ void release(SharedMemory *sharedMemory, Mutex toAccess) {
 }
 void addReader(SharedMemory *sharedMemory, string *name) {
         tuple<Type, string*> newReader = make_tuple(reader, name);
-        sharedMemory->numOfReaders++;
-
-        // add new reader to the reader queue
-        sharedMemory->readers.push(newReader);
-        cout << *name + " (Type: " + typeOutput[get<0>(newReader)] + ") has been added\n";
-        cout.flush();
-}
-
-tuple<Type, string*> removeReader(SharedMemory *sharedMemory) {
-    tuple<Type, string*> retrievedReader = sharedMemory->readers.front();
-    sharedMemory->numOfReaders--;
-
-    // remove reader from the reader queue
-    sharedMemory->readers.pop();
-    return retrievedReader;
+        sharedMemory->numOfPeople++;
+        sharedMemory->people.push(newReader);
+        assertInt(
+            sharedMemory->numOfPeople,
+            sharedMemory->people.size(),
+            "Number of people and size of people queue are equal when new reader is added",
+            "Number of people and size of people queue are not equal when new reader is added"
+        );
 }
 
 void addWriter(SharedMemory *sharedMemory, string *name) {
-        tuple<Type, string*> newWriter = make_tuple(writer, name);
-        sharedMemory->numOfWriters++;
-
-        // add new writer to the writer queue
-        sharedMemory->writers.push(newWriter);
-        cout << *name + " (Type: " + typeOutput[get<0>(newWriter)] + ") has been added\n";
-        cout.flush();
+    tuple<Type, string*> newWriter = make_tuple(writer, name);
+    sharedMemory->numOfPeople++;
+    sharedMemory->people.push(newWriter);
+    assertInt(
+        sharedMemory->numOfPeople,
+        sharedMemory->people.size(),
+        "Number of people and size of people queue are equal when new writer is added",
+        "Number of people and size of people queue are not equal when new writer is added"
+    );
 }
 
-tuple<Type, string*> removeWriter(SharedMemory *sharedMemory) {
-    tuple<Type, string*> retrievedWriter = sharedMemory->writers.front();
-    sharedMemory->numOfWriters--;
+Type getTypeAtFront(SharedMemory *sharedMemory) {
+    return get<0>(sharedMemory->people.front());
+}
 
-    // remove writer from the writer queue
-    sharedMemory->writers.pop();
-    return retrievedWriter;
+tuple<Type, string*> removePerson(SharedMemory *sharedMemory) {
+    tuple<Type, string*> retrievedPerson = sharedMemory->people.front();
+    sharedMemory->numOfPeople--;
+    sharedMemory->people.pop();
+    assertInt(
+        sharedMemory->numOfPeople,
+        sharedMemory->people.size(),
+        "Number of people and size of people queue are equal when a person is remove",
+        "Number of people and size of people queue are not equal when a person is remove"
+    );
 
+    return retrievedPerson;
 }
 
 void enterDatabase(SharedMemory *sharedMemory, tuple<Type, string*> person) {
     if (get<0>(person) == reader) {
         if(sharedMemory->writerMutex == 1) {
             acquire(sharedMemory, readerMut);
+            assertInt(
+                sharedMemory->readerMutex,
+                0,
+                "Reader mutex was successfully acquired",
+                "Reader mutex was not successfully acquired"
+            );
             sharedMemory->numOfReadersInDatabase++;
-            cout << *(get<1>(person)) + " (Type: " + typeOutput[get<0>(person)] + ") HAS ENTERED THE DATABASE\n";
-            cout.flush();
             sharedMemory->numOfPeopleInDatabase++;
-
-            // add reader to the database queue if there are no writers in the database
             sharedMemory->peopleInDatabase.push(person);
+            assertInt(
+                sharedMemory->numOfPeopleInDatabase,
+                sharedMemory->peopleInDatabase.size(),
+                "Number of people in database and size of people in database queue are equal when reader enters database",
+                "Number of people in database and size of people in database queue are not equal when reader enters database"
+            );
         }
     }
 
     if (get<0>(person) == writer) {
         if(sharedMemory->readerMutex == 1 && sharedMemory->writerMutex == 1) {
             acquire(sharedMemory, writerMut);
+            assertInt(
+                sharedMemory->writerMutex,
+                0,
+                "Writer mutex was successfully acquired",
+                "Writer mutex was not successfully acquired"
+            );
             sharedMemory->numOfWritersInDatabase++;
-            cout << *(get<1>(person)) + "(Type: " + typeOutput[get<0>(person)] + ") HAS ENTERED THE DATABASE\n";
-            cout.flush();
             sharedMemory->numOfPeopleInDatabase++;
-
-            // add writer to the database queue if there are no readers or writers in the database
             sharedMemory->peopleInDatabase.push(person);
+            assertInt(
+                sharedMemory->numOfPeopleInDatabase,
+                sharedMemory->peopleInDatabase.size(),
+                "Number of people in database and size of people in database queue are equal when writer enters database",
+                "Number of people in database and size of people in database queue are not equal when writer enters database"
+            );
         }
     }
 }
@@ -144,38 +162,52 @@ void enterDatabase(SharedMemory *sharedMemory, tuple<Type, string*> person) {
 void leaveDatabase(SharedMemory *sharedMemory) {
         tuple<Type, string*> personLeaving = sharedMemory->peopleInDatabase.front();
         if(get<0>(personLeaving) == reader) {
-
-            // remove reader from the database queue
             sharedMemory->peopleInDatabase.pop();
             sharedMemory->numOfReadersInDatabase--;
-            cout << *(get<1>(personLeaving)) + " (Type: " + typeOutput[get<0>(personLeaving)] + ") HAS LEFT THE DATABASE\n";
-            cout.flush();
             sharedMemory->numOfPeopleInDatabase--;
+            assertInt(
+                sharedMemory->numOfPeopleInDatabase,
+                sharedMemory->peopleInDatabase.size(),
+                "Number of people in database and size of people in database queue are equal when reader is removed from database",
+                "Number of people in database and size of people in database queue are not equal when reader is removed from database"
+            );
             if (sharedMemory->numOfReadersInDatabase == 0) {
                 release(sharedMemory, readerMut);
+                assertInt(
+                    sharedMemory->readerMutex,
+                    1,
+                    "Reader mutex was successfully released",
+                    "Reader mutex was not successfully released"
+                );
             }
         }
 
         if(get<0>(personLeaving) == writer) {
-
-            // remove writer from the database queue
             sharedMemory->peopleInDatabase.pop();
             sharedMemory->numOfWritersInDatabase--;
-            cout << *(get<1>(personLeaving)) + " (Type: " + typeOutput[get<0>(personLeaving)] + ") HAS LEFT THE DATABASE\n";
-            cout.flush();
             sharedMemory->numOfPeopleInDatabase--;
+            assertInt(
+                sharedMemory->numOfPeopleInDatabase,
+                sharedMemory->peopleInDatabase.size(),
+                "Number of people in database and size of people in database queue are equal when writer is removed from database",
+                "Number of people in database and size of people in database queue are not equal when writer is removed from database"
+            );
             release(sharedMemory, writerMut);
+                assertInt(
+                    sharedMemory->writerMutex,
+                    1,
+                    "Writer mutex was successfully released",
+                    "Writer mutex was not successfully released"
+                );
         }
+    sharedMemory->testCounter++;
 }
 
 void* database(void *sharedMemory) {
     SharedMemory *memory = (struct SharedMemory *) sharedMemory;
 
     while(true) {
-        // check for readers/writers in the database every two seconds
         this_thread::sleep_for(chrono::seconds(2));
-
-        // if there is someone in the database, pop them out
         if(memory->numOfPeopleInDatabase > 0) {
             leaveDatabase(memory);
         }
@@ -189,21 +221,24 @@ void* producer(void *sharedMemory) {
 
     while(true) {
         if(memory->criticalSection == 1) {
-            if(memory->readerMutex == 1 && memory->writerMutex == 1 && memory->numOfWriters > 0) {
-                acquire(memory, criticalSection);
-                tuple<Type, string*> writerEnteringDatabase = removeWriter(memory);
-
-                // writer can enter the database if there are no readers or writers in the database
-                enterDatabase(memory, writerEnteringDatabase);
-                release(memory, criticalSection);
-            }
-            else if(memory->writerMutex == 1 && memory->numOfReaders > 0 && memory->numOfWriters == 0) {
-                acquire(memory, criticalSection);
-                tuple<Type, string*> readerEnteringDatabase = removeReader(memory);
-
-                // reader can enter the database if there are no writers in the database
-                enterDatabase(memory, readerEnteringDatabase);
-                release(memory, criticalSection);
+            if(memory->numOfPeople > 0) {
+                Type nextUpType = getTypeAtFront(memory);
+                if(nextUpType == reader) {
+                    if(memory->writerMutex == 1) {
+                        acquire(memory, criticalSection);
+                        tuple<Type, string*> readerEnteringDatabase = removePerson(memory);
+                        enterDatabase(memory, readerEnteringDatabase);
+                        release(memory, criticalSection);
+                    }
+                }
+                else if(nextUpType == writer) {
+                    if(memory->readerMutex == 1 && memory->writerMutex == 1) {
+                        acquire(memory, criticalSection);
+                        tuple<Type, string*> writerEnteringDatabase = removePerson(memory);
+                        enterDatabase(memory, writerEnteringDatabase);
+                        release(memory, criticalSection);
+                    }
+                }
             }
         }
     }
@@ -228,7 +263,6 @@ void addPeople(SharedMemory* sharedMemory, string *students) {
     }
     release(sharedMemory, criticalSection);
 
-    // wait before entering more people
     this_thread::sleep_for(chrono::seconds(5));
 
     bool run2 = true;
@@ -245,8 +279,6 @@ void addPeople(SharedMemory* sharedMemory, string *students) {
         }
     }
     release(sharedMemory, criticalSection);
-
-
 }
 
 
@@ -261,8 +293,6 @@ int main() {
                            "Uniform", "Victor", "Whisky", "X-Ray", "Yankee",
                            "Zulu"};
 
-
-    // two threads, consumer=database, producer=producer
     pthread_t tidDatabase;
     pthread_t tidProducer;
     pthread_attr_t attrDatabase;
@@ -274,6 +304,16 @@ int main() {
     pthread_create(&tidProducer, &attrProducer, producer, sharedMemory);
 
     addPeople(sharedMemory, people);
+
+    bool testInProgress = true;
+    while(testInProgress) {
+        // we use 15 since there will be 15 readers/writers in database
+        if(sharedMemory->testCounter >= 15) {
+            this_thread::sleep_for(chrono::seconds(3));
+            endTesting();
+            testInProgress = false;
+        }
+    }
 
     pthread_join(tidDatabase, NULL);
     pthread_join(tidProducer, NULL);
