@@ -82,6 +82,10 @@ void release(SharedMemory *sharedMemory, Mutex toAccess) {
     }
 }
 
+void setNumHallwayChairs(SharedMemory *sharedMemory, int numChairs) {
+    sharedMemory->numOfChairsHallway = numChairs;
+}
+
 void enterHallway(SharedMemory *sharedMemory, string *student) {
     acquire(sharedMemory, criticalSection);
     if (sharedMemory->chairHallwaySemaphore >= sharedMemory->numOfChairsHallway) {
@@ -112,12 +116,6 @@ string* enterTaOffice(SharedMemory *sharedMemory) {
         sharedMemory->studentsInHallway.pop();
         sharedMemory->studentWithTa.push(studentFromHallway);
         signal(sharedMemory, chairHallwaySem);
-        assertInt(
-            sharedMemory->chairHallwaySemaphore,
-            sharedMemory->studentsInHallway.size(),
-            "Hallway semaphore and size of students in hallway queue are the same",
-            "Hallway semaphore and size of students in hallway queuea are not the same"
-        );
 
         return studentFromHallway;
     }
@@ -243,6 +241,9 @@ void* producer(void *sharedMemory) {
 int main() {
 
     SharedMemory *sharedMemory = &sMem;
+
+    // change second argument value to change number of hallway chairs
+    setNumHallwayChairs(sharedMemory, 3);
 
     pthread_t tidTa;
     pthread_t tidProducer;

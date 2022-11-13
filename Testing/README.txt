@@ -17,6 +17,10 @@ NOTE:
     the hallway and be operated on).
 
 Changing tests for 1:
+
+    To change number of chairs in barber shop, change second argument value in setNumChairs
+    in main function
+
     In producer function, change the enterBarberShop calls, accessing different
     indices of the people array to add different people. You can also add/change
     the thread sleep times to wait between adding people
