@@ -301,7 +301,7 @@ void* monkeyConsumer(void *sharedMemory) {
     while(true) {
         if (memory->criticalSection == 1) {
             if (rrCurrentDestination == east && memory->numOfEastwardMonkeys > 0 && memory->westwardMutex == 1 &&
-                memory->monkeysOnRopeSemaphore < 5) {
+                memory->monkeysOnRopeSemaphore < memory->ropeCapacity) {
                 acquire(memory, criticalSection);
                 int counter = 0;
                 pthread_t tidMonkeys[memory->rrQuantum];
@@ -323,7 +323,7 @@ void* monkeyConsumer(void *sharedMemory) {
                 }
                 rrCurrentDestination = west;
             } else if (rrCurrentDestination == west && memory->numOfWestwardMonkeys > 0 && memory->eastwardMutex == 1 &&
-                       memory->monkeysOnRopeSemaphore < 5) {
+                       memory->monkeysOnRopeSemaphore < memory->ropeCapacity) {
                 acquire(memory, criticalSection);
                 int counter = 0;
                 pthread_t tidMonkeys[memory->rrQuantum];
@@ -356,10 +356,10 @@ int main() {
     SharedMemory *sharedMemory = &sMem;
 
     // change value of second argument to change rope capacity
-    setRopeCapacity(sharedMemory, 5);
+    setRopeCapacity(sharedMemory, 6);
 
     // change value of second argument to change round robin quantum
-    setRRQuantum(sharedMemory, 5);
+    setRRQuantum(sharedMemory, 6);
 
     // three threads, consumer=monkeyConsumer, producer1=eastward, producer2=westward
     pthread_t tidMonkeyConsumer;

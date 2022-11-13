@@ -289,7 +289,7 @@ void* monkeyConsumer(void *sharedMemory) {
 
     while(true) {
         if(memory->criticalSection == 1) {
-            if(memory->numOfEastwardMonkeys > 0 && memory->westwardMutex == 1 && memory->monkeysOnRopeSemaphore < 5) {
+            if(memory->numOfEastwardMonkeys > 0 && memory->westwardMutex == 1 && memory->monkeysOnRopeSemaphore < memory->ropeCapacity) {
                 acquire(memory, criticalSection);
                 Monkey eastwardMonkey = removeEastwardMonkey((memory));
 
@@ -298,7 +298,7 @@ void* monkeyConsumer(void *sharedMemory) {
                 enterRope(eastwardMonkey.id, eastwardMonkey.destination, memory);
                 release(memory, criticalSection);
             }
-            else if(memory->numOfWestwardMonkeys > 0 && memory->eastwardMutex == 1 && memory->monkeysOnRopeSemaphore < 5) {
+            else if(memory->numOfWestwardMonkeys > 0 && memory->eastwardMutex == 1 && memory->monkeysOnRopeSemaphore < memory->ropeCapacity) {
                 acquire(memory, criticalSection);
                 Monkey westwardMonkey = removeWestwardMonkey(memory);
 
