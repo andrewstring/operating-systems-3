@@ -108,8 +108,8 @@ tuple<Type, string*> removePerson(SharedMemory *sharedMemory) {
     assertInt(
         sharedMemory->numOfPeople,
         sharedMemory->people.size(),
-        "Number of people and size of people queue are equal when a person is remove",
-        "Number of people and size of people queue are not equal when a person is remove"
+        "Number of people and size of people queue are equal when a person is removed",
+        "Number of people and size of people queue are not equal when a person is removed"
     );
 
     return retrievedPerson;
