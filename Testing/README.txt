@@ -1,7 +1,7 @@
 To execute, run either:
-    g++ -std=c++11 -o {file}.out {file}.cpp
+    g++ -std=c++11 -lpthread -o {file}.out -lpthread {file}.cpp
     or
-    clang++ -std=c++11 -o {file}.out {file}.cpp if g++ does not work
+    clang++ -std=c++11 -lpthread -o {file}.out -lpthread {file}.cpp if g++ does not work
 
 NOTE:
     In the main function, there is a loop that checks for completion
