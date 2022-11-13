@@ -322,6 +322,7 @@ void* travelerConsumer(void *sharedMemory) {
 int main() {
     SharedMemory *sharedMemory = &sMem;
 
+    // change value of second argument to change red robin quantum value
     setRRQuantum(sharedMemory, 5);
 
     // three threads, consumer: travelerConsumer, producer1: northProducer, producer2: southProducer

@@ -116,6 +116,10 @@ void signal(SharedMemory *sharedMemory, Semaphore toAccess) {
     }
 }
 
+void setRopeCapacity(SharedMemory *sharedMemory, int ropeCapacityNum) {
+    sharedMemory->ropeCapacity = ropeCapacityNum;
+}
+
 void setRRQuantum(SharedMemory *sharedMemory, int quantum) {
     sharedMemory->rrQuantum = quantum;
 }
@@ -351,6 +355,10 @@ void* monkeyConsumer(void *sharedMemory) {
 int main() {
     SharedMemory *sharedMemory = &sMem;
 
+    // change value of second argument to change rope capacity
+    setRopeCapacity(sharedMemory, 5);
+
+    // change value of second argument to change round robin quantum
     setRRQuantum(sharedMemory, 5);
 
     // three threads, consumer=monkeyConsumer, producer1=eastward, producer2=westward

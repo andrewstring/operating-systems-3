@@ -114,6 +114,9 @@ void signal(SharedMemory *sharedMemory, Semaphore toAccess) {
     }
 }
 
+void setRopeCapacity(SharedMemory *sharedMemory, int ropeCapacityNum) {
+    sharedMemory->ropeCapacity = ropeCapacityNum;
+}
 
 void addEastwardMonkey(SharedMemory *sharedMemory, int id) {
     Monkey eastwardMonkey = Monkey(id, east, sharedMemory);
@@ -313,6 +316,9 @@ void* monkeyConsumer(void *sharedMemory) {
 
 int main() {
     SharedMemory *sharedMemory = &sMem;
+
+    // change value of second argument to change rope capacity
+    setRopeCapacity(sharedMemory, 5);
 
     // three threads, consumer=monkeyConsumer, producer1=eastward, producer2=westward
     pthread_t tidMonkeyConsumer;

@@ -117,16 +117,19 @@ void signal(SharedMemory *sharedMemory, Semaphore toAccess) {
 }
 
 // enables main function to set the rope capacity
+// change value of second argument to change rope capacity
 void setRopeCapacity(SharedMemory *sharedMemory, int capacity) {
     sharedMemory->ropeCapacity = capacity;
 }
 
 // enables main function to set the number of eastward students that can cross rope at once
+// change value of second argument to change eastward rope capacity
 void setEastwardRopeCapacity(SharedMemory *sharedMemory, int capacity) {
     sharedMemory->eastwardRopeCapacity = capacity;
 }
 
 // enables main function to set the number of westward students that can cross the rope at once
+// change value of second argument to change westward rope capacity
 void setWestwardRopeCapacity(SharedMemory *sharedMemory, int capacity) {
     sharedMemory->westwardRopeCapacity = capacity;
 }
@@ -294,6 +297,7 @@ int main() {
     SharedMemory *sharedMemory = &sMem;
 
     // set the different capacities for the rope
+    // change value of second argument to change different rope capacities
     setRopeCapacity(sharedMemory, 5);
     setEastwardRopeCapacity(sharedMemory, 3);
     setWestwardRopeCapacity(sharedMemory, 3);
