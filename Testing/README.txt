@@ -17,10 +17,8 @@ NOTE:
     the hallway and be operated on).
 
 Changing tests for 1:
-
     To change number of chairs in barber shop, change second argument value in setNumChairs
     in main function
-
     In producer function, change the enterBarberShop calls, accessing different
     indices of the people array to add different people. You can also add/change
     the thread sleep times to wait between adding people
@@ -29,6 +27,8 @@ Changing tests for 2:
     In struct SharedMemory, change the value of numOfRounds
 
 Changing tests for 3:
+    To change number of chair in hallway, change second argument value in setNumHallwayChairs
+    in main function
     In producer function, change the enterHallway calls, accessing different indices
     of the people array to add different people. You can also add/change
     the thread sleep times to wait between adding people
