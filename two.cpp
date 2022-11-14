@@ -261,6 +261,9 @@ void* agent(void *sharedMemory) {
 
 int main() {
 
+    cout << "\nNOTE: threads keep running even after last round\n";
+    cout << "After last round, program will hang\n\n";
+
     SharedMemory *sharedMemory = &sMem;
 
     // change value of second argument to change number of rounds

@@ -255,6 +255,9 @@ void addPeople(SharedMemory* sharedMemory, string *students) {
 
 
 int main() {
+    cout << "\nNOTE: Threads will continue to run after last reader/writer leaves\n";
+    cout << "After last reader/writer leaves, program will hang\n\n";
+
     SharedMemory *sharedMemory = &sMem;
 
     string people[26] = {"Alpha", "Bravo", "Charlie", "Delta", "Echo",

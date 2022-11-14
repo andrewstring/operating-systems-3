@@ -294,6 +294,9 @@ void* studentConsumer(void *sharedMemory) {
 }
 
 int main() {
+    cout << "\nNOTE: Threads will continue to run after last student crosses rope\n";
+    cout << "After last student crosses rope, program will hang\n\n";
+
     SharedMemory *sharedMemory = &sMem;
 
     // set the different capacities for the rope

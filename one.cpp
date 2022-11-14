@@ -190,6 +190,9 @@ void* producer(void *sharedMemory) {
 }
 
 int main() {
+    cout << "\nNOTE: threads keep running even after last customer leaves\n";
+    cout << "Once last customer leaves, program will hang\n\n";
+
     SharedMemory *sharedMemory = &sMem;
 
     // change second argument value to change number of chairs

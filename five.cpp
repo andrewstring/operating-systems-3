@@ -320,6 +320,9 @@ void* travelerConsumer(void *sharedMemory) {
 }
 
 int main() {
+    cout << "\nNOTE: Threads will continue to run after least traveler crosses bridge\n";
+    cout << "After last traveler leaves, program will hang\n\n";
+
     SharedMemory *sharedMemory = &sMem;
 
     // change value of second argument to change red robin quantum value

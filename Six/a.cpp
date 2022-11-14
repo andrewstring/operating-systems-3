@@ -315,6 +315,9 @@ void* monkeyConsumer(void *sharedMemory) {
 }
 
 int main() {
+    cout << "\nNOTE: Threads will continue to run after last monkey crosses rope\n";
+    cout << "After last monkey crosses rope, program will hang\n\n";
+
     SharedMemory *sharedMemory = &sMem;
 
     // change value of second argument to change rope capacity

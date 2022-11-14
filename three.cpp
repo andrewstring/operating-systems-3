@@ -206,6 +206,8 @@ void* producer(void *sharedMemory) {
 }
 
 int main() {
+    cout << "\nNOTE: Threads will continue to run even after last student leaves\n";
+    cout << "After last student leaves program will hang\n\n";
 
     SharedMemory *sharedMemory = &sMem;
 
