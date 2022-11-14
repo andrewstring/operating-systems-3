@@ -131,7 +131,7 @@ void enterDatabase(SharedMemory *sharedMemory, tuple<Type, string*> person) {
         if(sharedMemory->readerMutex == 1 && sharedMemory->writerMutex == 1) {
             acquire(sharedMemory, writerMut);
             sharedMemory->numOfWritersInDatabase++;
-            cout << *(get<1>(person)) + "(Type: " + typeOutput[get<0>(person)] + ") HAS ENTERED THE DATABASE\n";
+            cout << *(get<1>(person)) + " (Type: " + typeOutput[get<0>(person)] + ") HAS ENTERED THE DATABASE\n";
             cout.flush();
             sharedMemory->numOfPeopleInDatabase++;
 
